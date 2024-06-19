@@ -14,13 +14,13 @@ class Webhook extends Model
         'name',
         'trigger',
         'actions',
-        'external_info'
+        'external_data'
     ];
 
     protected $casts = [
         'trigger' => 'array',
         'actions' => 'array',
-        'external_info' => 'array'
+        'external_data' => 'array'
     ];
 
     protected static function boot()
@@ -28,13 +28,13 @@ class Webhook extends Model
         parent::boot();
 
         static::creating(function (self $webhook) {
-            $externalInfo = $webhook->getTriggerConfig()->subscribe($webhook);
+            $externalData = $webhook->getTriggerConfig()->subscribe($webhook);
 
-            if(! $externalInfo) {
+            if($externalData === false) {
                 return false;
             }
 
-            $webhook->external_info = $externalInfo;
+            $webhook->external_data = $externalData;
 
             return true;
         });
@@ -46,13 +46,13 @@ class Webhook extends Model
                 return false;
             }
 
-            $externalInfo = $webhook->getTriggerConfig()->subscribe($webhook);
+            $externalData = $webhook->getTriggerConfig()->subscribe($webhook);
 
-            if(! $externalInfo) {
+            if(! $externalData) {
                 return false;
             }
 
-            $webhook->external_info = $externalInfo;
+            $webhook->external_data = $externalData;
 
             return true;
         });

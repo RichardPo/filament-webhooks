@@ -5,6 +5,7 @@ namespace RichardPost\FilamentWebhooks;
 use Closure;
 use Exception;
 use Filament\Forms\Components\Section;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use RichardPost\FilamentWebhooks\Models\Webhook;
 
@@ -14,15 +15,17 @@ class Trigger
 
     protected array $form = [];
 
-    protected ?Closure $subscribeUsing = null;
+    public ?Closure $subscribeUsing = null;
 
-    protected ?Closure $unsubscribeUsing = null;
+    public ?Closure $unsubscribeUsing = null;
 
-    protected ?Closure $handleLifecycleNotificationUsing = null;
+    public ?Closure $handleLifecycleNotificationUsing = null;
 
-    protected ?Closure $beforeHandleNotification = null;
+    public ?Closure $beforeHandleNotificationUsing = null;
 
-    protected ?Closure $getExternalResourcesUsing = null;
+    public ?Closure $getExternalResourcesUsing = null;
+
+    public ?Closure $getSuccessfulResponseUsing = null;
 
     public function __construct(
         protected string $name
@@ -71,11 +74,6 @@ class Trigger
         return $this;
     }
 
-    public function getSubscribeUsing(): ?Closure
-    {
-        return $this->subscribeUsing;
-    }
-
     public function unsubscribeUsing(Closure $callback): static
     {
         $this->unsubscribeUsing = $callback;
@@ -83,21 +81,11 @@ class Trigger
         return $this;
     }
 
-    public function getUnsubscribeUsing(): ?Closure
+    public function beforeHandleNotificationUsing(Closure $callback): static
     {
-        return $this->unsubscribeUsing;
-    }
-
-    public function beforeHandleNotification(Closure $callback): static
-    {
-        $this->beforeHandleNotification = $callback;
+        $this->beforeHandleNotificationUsing = $callback;
 
         return $this;
-    }
-
-    public function getBeforeHandleNotification(): ?Closure
-    {
-        return $this->beforeHandleNotification;
     }
 
     public function handleLifecycleNotificationUsing(?Closure $callback): static
@@ -107,11 +95,6 @@ class Trigger
         return $this;
     }
 
-    public function getHandleLifecycleNotificationUsing(): ?Closure
-    {
-        return $this->handleLifecycleNotificationUsing;
-    }
-
     public function getExternalResourcesUsing(?Closure $callback): static
     {
         $this->getExternalResourcesUsing = $callback;
@@ -119,63 +102,60 @@ class Trigger
         return $this;
     }
 
-    /**
-     * @throws Exception
-     */
+    public function getSuccesfulResponseUsing(?Closure $callback): static
+    {
+        $this->getSuccessfulResponseUsing = $callback;
+
+        return $this;
+    }
+
     public function subscribe(Webhook $webhook): array|bool
     {
-        $callback = $this->getSubscribeUsing();
+        $callback = $this->subscribeUsing ?? fn () => false;
 
-        if(! $callback) {
-            throw new Exception("Missing subscribeUsing method on trigger '{$this->name}'");
-        }
-
-        return $callback($webhook->trigger);
+        return $callback(
+            $webhook->trigger,
+            route('filament-webhooks.notify', ['webhook' => $webhook]),
+            route('filament-webhooks.lifecycle', ['webhook' => $webhook])
+        );
     }
 
-    /**
-     * @throws Exception
-     */
     public function unsubscribe(Webhook $webhook): bool
     {
-        $callback = $this->getUnsubscribeUsing();
-
-        if(! $callback) {
-            throw new Exception("Missing unsubscribeUsing method on trigger '{$this->name}'");
-        }
+        $callback = $this->unsubscribeUsing ?? fn () => false;
 
         return $callback($webhook->trigger);
     }
 
-    /**
-     * @throws Exception
-     */
-    public function handleLifecycleNotification(Webhook $webhook): Response
+    public function handleLifecycleNotification(Request $request, Webhook $webhook): Response
     {
-        $callback = $this->getUnsubscribeUsing();
+        $callback = $this->handleLifecycleNotificationUsing ?? fn () => abort(500);
 
-        if(! $callback) {
-            throw new Exception("Missing handleLifecycleNotificationUsing method on trigger '{$this->name}'");
-        }
-
-        return $callback($webhook->external_data);
+        return $callback($request, $webhook->external_data);
     }
 
-    /**
-     * @throws Exception
-     */
-    public function getExternalResources(Webhook $webhook): array
+    public function getExternalResources(Request $request, Webhook $webhook): array
     {
-        $callback = $this->getExternalResourcesUsing;
+        $callback = $this->getExternalResourcesUsing ?? fn () => [];
 
-        if(! $callback) {
-            throw new Exception("Missing handleLifecycleNotificationUsing method on trigger '{$this->name}'");
-        }
-
-        return $callback($webhook->external_data, function (array $externalData) use ($webhook) {
+        return $callback($request, $webhook->external_data, function (array $externalData) use ($webhook) {
             $webhook->updateQuietly([
                 'external_data' => $externalData
             ]);
         });
+    }
+
+    public function getSuccessfulResponse(): Response
+    {
+        $callback = $this->getSuccessfulResponseUsing ?? fn () => response();
+
+        return $callback();
+    }
+
+    public function beforeHandleNotification(Request $request, Webhook $webhook): bool|Response
+    {
+        $callback = $this->beforeHandleNotificationUsing ?? fn () => true;
+
+        return $callback($request, $webhook->trigger);
     }
 }

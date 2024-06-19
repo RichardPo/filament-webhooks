@@ -11,6 +11,7 @@ class FilamentWebhooksServiceProvider extends PackageServiceProvider
     {
         $package
             ->name('filament-webhooks')
-            ->hasMigrations(['create_webhooks_table']);
+            ->hasMigrations(['create_webhooks_table'])
+            ->hasRoutes(['api']);
     }
 }

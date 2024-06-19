@@ -15,7 +15,7 @@ return new class extends Migration {
             $table->json('trigger');
             $table->json('actions');
 
-            $table->json('external_info')->nullable();
+            $table->json('external_data');
 
             $table->timestamps();
         });

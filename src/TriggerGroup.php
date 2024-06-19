@@ -17,6 +17,8 @@ class TriggerGroup
     protected ?Closure $unsubscribeUsing = null;
     protected ?Closure $handleLifecycleNotificationUsing = null;
 
+    protected ?Closure $getSuccessfulResponseUsing = null;
+
     public function __construct(
         protected string $name
     ) {}
@@ -37,20 +39,24 @@ class TriggerGroup
     {
         return collect($this->triggers)
             ->map(function (Trigger $trigger) {
-                if(! $trigger->getSubscribeUsing()) {
-                    return $trigger->subscribeUsing($this->getSubscribeUsing());
+                if(! $trigger->subscribeUsing) {
+                    $trigger->subscribeUsing($this->subscribeUsing ?? fn () => false);
                 }
 
-                if(! $trigger->getUnsubscribeUsing()) {
-                    return $trigger->unsubscribeUsing($this->getUnsubscribeUsing());
+                if(! $trigger->unsubscribeUsing) {
+                    $trigger->unsubscribeUsing($this->unsubscribeUsing ?? fn () => false);
                 }
 
-                if(! $trigger->getBeforeHandleNotification()) {
-                    return $trigger->beforeHandleNotification($this->getBeforeHandleNotification() ?? fn () => true);
+                if(! $trigger->beforeHandleNotificationUsing) {
+                    $trigger->beforeHandleNotificationUsing($this->beforeHandleNotification ?? fn () => true);
                 }
 
-                if(! $trigger->getHandleLifecycleNotificationUsing()) {
-                    return $trigger->handleLifecycleNotificationUsing($this->getHandleLifecycleNotificationUsing());
+                if(! $trigger->handleLifecycleNotificationUsing) {
+                    $trigger->handleLifecycleNotificationUsing($this->handleLifecycleNotificationUsing ?? fn () => abort(500));
+                }
+
+                if(! $trigger->getSuccessfulResponseUsing) {
+                    $trigger->getSuccesfulResponseUsing($this->getSuccessfulResponseUsing ?? fn () => response());
                 }
 
                 return $trigger;
@@ -58,16 +64,11 @@ class TriggerGroup
             ->toArray();
     }
 
-    public function beforeHandleNotification(Closure $callback): static
+    public function beforeHandleNotificationUsing(Closure $callback): static
     {
         $this->beforeHandleNotification = $callback;
 
         return $this;
-    }
-
-    public function getBeforeHandleNotification(): ?Closure
-    {
-        return $this->beforeHandleNotification;
     }
 
     public function subscribeUsing(Closure $callback): static
@@ -77,21 +78,11 @@ class TriggerGroup
         return $this;
     }
 
-    public function getSubscribeUsing(): Closure
-    {
-        return $this->subscribeUsing ?? fn () => false;
-    }
-
     public function unsubscribeUsing(Closure $callback): static
     {
         $this->unsubscribeUsing = $callback;
 
         return $this;
-    }
-
-    public function getUnsubscribeUsing(): Closure
-    {
-        return $this->unsubscribeUsing ?? fn () => false;
     }
 
     public function handleLifecycleNotificationUsing(Closure $callback): static
@@ -101,8 +92,10 @@ class TriggerGroup
         return $this;
     }
 
-    public function getHandleLifecycleNotificationUsing(): ?Closure
+    public function getSuccesfulResponseUsing(Closure $callback): static
     {
-        return $this->handleLifecycleNotificationUsing;
+        $this->getSuccessfulResponseUsing = $callback;
+
+        return $this;
     }
 }
