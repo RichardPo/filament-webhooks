@@ -131,7 +131,11 @@ class Trigger
     {
         $callback = $this->handleLifecycleNotificationUsing ?? fn () => abort(500);
 
-        return $callback($request, $webhook->external_data);
+        return $callback($request, $webhook->external_data, function () use ($webhook) {
+            $webhook->update([
+                'external_data' => []
+            ]);
+        });
     }
 
     public function getExternalResources(Request $request, Webhook $webhook): array
