@@ -1,0 +1,28 @@
+{
+    "name": "richardpost/filament-webhooks",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "RichardPost\\FilamentWebhooks\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Richard Post",
+            "email": "richard.hn.post@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "filament/filament": "^3.0",
+        "spatie/laravel-package-tools": "^1.15"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "RichardPost\\FilamentWebhooks\\FilamentWebhooksServiceProvider"
+            ]
+        }
+    }
+}
