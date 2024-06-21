@@ -3,10 +3,10 @@
 namespace RichardPost\FilamentWebhooks;
 
 use Closure;
-use Exception;
 use Filament\Forms\Components\Section;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Str;
 use RichardPost\FilamentWebhooks\Models\Webhook;
 
 class Trigger
@@ -133,7 +133,7 @@ class Trigger
 
         return $callback($request, $webhook->external_data, function () use ($webhook) {
             $webhook->update([
-                'external_data' => []
+                'external_data' => ['update' => Str::uuid()]
             ]);
         });
     }

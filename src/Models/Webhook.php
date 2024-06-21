@@ -2,7 +2,10 @@
 
 namespace RichardPost\FilamentWebhooks\Models;
 
+use Filament\Notifications\Notification;
+use Filament\Support\Exceptions\Halt;
 use Illuminate\Database\Eloquent\Model;
+use RichardPost\FilamentWebhooks\Enums\WebhookStatus;
 use RichardPost\FilamentWebhooks\Models\Traits\HasUuid;
 use RichardPost\FilamentWebhooks\Trigger;
 
@@ -12,6 +15,7 @@ class Webhook extends Model
 
     protected $fillable = [
         'name',
+        'status',
         'trigger',
         'actions',
         'external_data'
@@ -20,7 +24,8 @@ class Webhook extends Model
     protected $casts = [
         'trigger' => 'array',
         'actions' => 'array',
-        'external_data' => 'array'
+        'external_data' => 'array',
+        'status' => WebhookStatus::class
     ];
 
     protected static function boot()
@@ -28,37 +33,68 @@ class Webhook extends Model
         parent::boot();
 
         static::creating(function (self $webhook) {
+            $webhook->status = WebhookStatus::Unsubscribed;
+            $webhook->external_data = [];
+            $webhook->saveQuietly();
+
             $externalData = $webhook->getTriggerConfig()->subscribe($webhook);
 
-            if($externalData === false) {
+            if (!is_array($externalData)) {
+                $webhook->deleteQuietly();
+
                 return false;
             }
 
+            $webhook->status = WebhookStatus::Subscribed;
             $webhook->external_data = $externalData;
 
             return true;
         });
 
         static::updating(function (self $webhook) {
-            $unsubscribed = $webhook->getTriggerConfig()->unsubscribe($webhook);
+            if($webhook->status === WebhookStatus::Subscribed) {
+                $unsubscribed = $webhook->getTriggerConfig()->unsubscribe($webhook);
 
-            if(! $unsubscribed) {
-                return false;
+                if(! $unsubscribed) {
+                    return false;
+                }
             }
 
             $externalData = $webhook->getTriggerConfig()->subscribe($webhook);
 
-            if(! $externalData) {
+            if (! is_array($externalData)) {
+                $webhook->updateQuietly([
+                    'status' => WebhookStatus::Unsubscribed,
+                    'external_data' => []
+                ]);
+
                 return false;
             }
 
+            $webhook->status = WebhookStatus::Subscribed;
             $webhook->external_data = $externalData;
 
             return true;
         });
 
         static::deleting(function (self $webhook) {
-            return $webhook->getTriggerConfig()->unsubscribe($webhook);
+            if($webhook->status !== WebhookStatus::Subscribed) {
+                return true;
+            }
+
+            $unsubscribed = $webhook->getTriggerConfig()->unsubscribe($webhook);
+
+            if(! $unsubscribed) {
+                Notification::make()
+                    ->title("Webhook '{$webhook->name}' could not be deleted")
+                    ->body('Could not unsubscribe from external resource')
+                    ->warning()
+                    ->send();
+
+                throw new Halt();
+            }
+
+            return true;
         });
     }
 
