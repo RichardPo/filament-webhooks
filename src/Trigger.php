@@ -126,7 +126,7 @@ class Trigger
     {
         $callback = $this->unsubscribeUsing ?? fn () => false;
 
-        return $callback($webhook->trigger);
+        return $callback($webhook->external_data);
     }
 
     public function handleLifecycleNotification(Request $request, Webhook $webhook): Response
