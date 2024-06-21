@@ -7,6 +7,9 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Get;
+use Filament\Notifications\Notification;
+use Illuminate\Database\Eloquent\Collection;
+use RichardPost\FilamentWebhooks\Enums\WebhookStatus;
 use RichardPost\FilamentWebhooks\Filament\Resources\WebhookResource\Pages;
 use RichardPost\FilamentWebhooks\Filament\Resources\WebhookResource\RelationManagers;
 use RichardPost\FilamentWebhooks\Models\Webhook;
@@ -66,17 +69,89 @@ class WebhookResource extends Resource
     {
         return $table
             ->columns([
-                //
+                Tables\Columns\TextColumn::make('name')
+                    ->label('Name')
+                    ->limit(40)
+                    ->extraHeaderAttributes([
+                        'style' => 'min-width: 200px;'
+                    ]),
+
+                Tables\Columns\TextColumn::make('status')
+                    ->label('Status')
+                    ->formatStateUsing(fn (Webhook $record) => WebhookStatus::getLabel($record->status))
+                    ->color(fn (Webhook $record) => WebhookStatus::getColor($record->status))
+                    ->tooltip(fn (Webhook $record) => match($record->status) {
+                        WebhookStatus::Unsubscribed => 'This webhook was created, but there was an error during the subscription process. Consider updating the webhook or recreating it.',
+                        default => null
+                    })
+                    ->badge()
+                    ->extraHeaderAttributes([
+                        'style' => 'min-width: 0px; width: 0px;'
+                    ])
+                    ->extraCellAttributes([
+                        'style' => 'min-width: 0px;'
+                    ]),
+
+                Tables\Columns\TextColumn::make('trigger.name')
+                    ->label('Trigger')
+                    ->formatStateUsing(function (string $state) {
+                        $trigger = collect(filament('richardpost-filament-webhooks')->getTriggers())
+                            ->filter(fn (Trigger $trigger) => $trigger->getName() === $state)
+                            ->first();
+
+                        if(! $trigger) {
+                            return '';
+                        }
+
+                        return $trigger->getLabel();
+                    })
+                    ->limit(40)
+                    ->badge()
+                    ->tooltip(function (string $state) {
+                        $trigger = collect(filament('richardpost-filament-webhooks')->getTriggers())
+                            ->filter(fn (Trigger $trigger) => $trigger->getName() === $state)
+                            ->first();
+
+                        if(! $trigger) {
+                            return null;
+                        }
+
+                        return $trigger->getLabel();
+                    })
+                    ->extraHeaderAttributes([
+                        'style' => 'min-width: 0px; width: 0px;'
+                    ])
+                    ->extraCellAttributes([
+                        'style' => 'min-width: 0px;'
+                    ]),
+
+                Tables\Columns\TextColumn::make('space')
+                    ->label('')
+                    ->grow()
             ])
             ->filters([
                 //
             ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-            ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(function (Collection $records) {
+                            $records->each(function (Webhook $record) {
+                                if(! $record->delete()) {
+                                    Notification::make()
+                                        ->title("Webhook '{$record->name}' could not be deleted")
+                                        ->danger()
+                                        ->send();
+
+                                    return;
+                                }
+
+                                Notification::make()
+                                    ->title("Webhook '{$record->name}' deleted")
+                                    ->success()
+                                    ->send();
+                            });
+                        }),
                 ]),
             ]);
     }

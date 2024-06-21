@@ -7,6 +7,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
 use RichardPost\FilamentWebhooks\Filament\Resources\WebhookResource;
+use RichardPost\FilamentWebhooks\Models\Webhook;
 
 class EditWebhook extends EditRecord
 {
@@ -15,7 +16,19 @@ class EditWebhook extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()
+                ->action(function (Webhook $webhook, Actions\DeleteAction $action) {
+                    if(! $webhook->delete()) {
+                        Notification::make()
+                            ->title('Could not delete webhook')
+                            ->danger()
+                            ->send();
+
+                        return;
+                    }
+
+                    $action->success();
+                }),
         ];
     }
 

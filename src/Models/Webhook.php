@@ -91,19 +91,7 @@ class Webhook extends Model
                 return true;
             }
 
-            $unsubscribed = $webhook->getTriggerConfig()->unsubscribe($webhook);
-
-            if(! $unsubscribed) {
-                Notification::make()
-                    ->title("Webhook '{$webhook->name}' could not be deleted")
-                    ->body('Could not unsubscribe from external resource')
-                    ->warning()
-                    ->send();
-
-                throw new Halt();
-            }
-
-            return true;
+            return $webhook->getTriggerConfig()->unsubscribe($webhook);
         });
     }
 
