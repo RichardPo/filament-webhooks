@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use RichardPost\FilamentWebhooks\Enums\WebhookStatus;
 use RichardPost\FilamentWebhooks\Models\Traits\HasUuid;
 use RichardPost\FilamentWebhooks\Trigger;
+use Illuminate\Support\Str;
 
 class Webhook extends Model
 {
@@ -33,8 +34,11 @@ class Webhook extends Model
         parent::boot();
 
         static::creating(function (self $webhook) {
+            $id = Str::uuid();
+
             $temp = $webhook->replicate();
 
+            $temp->id = $id;
             $temp->status = WebhookStatus::Unsubscribed;
             $temp->external_data = [];
             $temp->saveQuietly();
@@ -47,7 +51,6 @@ class Webhook extends Model
                 return false;
             }
 
-            $id = $temp->id;
             $temp->deleteQuietly();
 
             $webhook->id = $id;
