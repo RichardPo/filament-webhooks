@@ -42,6 +42,8 @@ class Webhook extends Model
             $externalData = $temp->getTriggerConfig()->subscribe($temp);
 
             if (!is_array($externalData)) {
+                $temp->deleteQuietly();
+
                 return false;
             }
 
