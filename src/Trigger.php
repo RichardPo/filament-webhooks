@@ -4,6 +4,8 @@ namespace RichardPost\FilamentWebhooks;
 
 use Closure;
 use Filament\Forms\Components\Section;
+use Illuminate\Contracts\Routing\ResponseFactory;
+use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Str;
@@ -149,7 +151,7 @@ class Trigger
         });
     }
 
-    public function getSuccessfulResponse(): Response
+    public function getSuccessfulResponse(): Application|Response|ResponseFactory|\Illuminate\Contracts\Foundation\Application
     {
         $callback = $this->getSuccessfulResponseUsing ?? fn () => response();
 

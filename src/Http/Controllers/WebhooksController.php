@@ -3,7 +3,6 @@
 namespace RichardPost\FilamentWebhooks\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 use RichardPost\FilamentWebhooks\Models\Webhook;
 
@@ -18,7 +17,7 @@ class WebhooksController extends Controller
 
         $response = $trigger->beforeHandleNotification($request, $webhook);
 
-        if($response instanceof Response) {
+        if($response !== true) {
             return $response;
         }
 
@@ -42,7 +41,7 @@ class WebhooksController extends Controller
 
         $response = $trigger->beforeHandleNotification($request, $webhook);
 
-        if($response instanceof Response) {
+        if($response !== true) {
             return $response;
         }
 
