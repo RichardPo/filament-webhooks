@@ -9,6 +9,10 @@ trait HasUuid
     protected static function bootHasUuid(): void
     {
         static::creating(function ($model) {
+            if($model->id) {
+                return;
+            }
+
             $model->id = (string)Str::uuid();
         });
     }

@@ -33,18 +33,22 @@ class Webhook extends Model
         parent::boot();
 
         static::creating(function (self $webhook) {
-            $webhook->status = WebhookStatus::Unsubscribed;
-            $webhook->external_data = [];
-            $webhook->saveQuietly();
+            $temp = $webhook->replicate();
 
-            $externalData = $webhook->getTriggerConfig()->subscribe($webhook);
+            $temp->status = WebhookStatus::Unsubscribed;
+            $temp->external_data = [];
+            $temp->saveQuietly();
+
+            $externalData = $temp->getTriggerConfig()->subscribe($temp);
 
             if (!is_array($externalData)) {
-                $webhook->deleteQuietly();
-
                 return false;
             }
 
+            $id = $temp->id;
+            $temp->deleteQuietly();
+
+            $webhook->id = $id;
             $webhook->status = WebhookStatus::Subscribed;
             $webhook->external_data = $externalData;
 
