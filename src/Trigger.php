@@ -129,7 +129,7 @@ class Trigger
         return $callback($webhook->external_data);
     }
 
-    public function handleLifecycleNotification(Request $request, Webhook $webhook): Response
+    public function handleLifecycleNotification(Request $request, Webhook $webhook): Application|Response|ResponseFactory|\Illuminate\Contracts\Foundation\Application
     {
         $callback = $this->handleLifecycleNotificationUsing ?? fn () => abort(500);
 
@@ -158,7 +158,7 @@ class Trigger
         return $callback();
     }
 
-    public function beforeHandleNotification(Request $request, Webhook $webhook): bool|Response
+    public function beforeHandleNotification(Request $request, Webhook $webhook): bool|Application|Response|ResponseFactory|\Illuminate\Contracts\Foundation\Application
     {
         $callback = $this->beforeHandleNotificationUsing ?? fn () => true;
 

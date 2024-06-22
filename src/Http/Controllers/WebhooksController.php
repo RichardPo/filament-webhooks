@@ -4,13 +4,11 @@ namespace RichardPost\FilamentWebhooks\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use RichardPost\FilamentWebhooks\Action;
 use RichardPost\FilamentWebhooks\Models\Webhook;
 
 class WebhooksController extends Controller
 {
-    /**
-     * @throws \Exception
-     */
     public function handleNotification(Request $request, Webhook $webhook)
     {
         $trigger = $webhook->getTriggerConfig();
@@ -24,17 +22,18 @@ class WebhooksController extends Controller
         $resources = $trigger->getExternalResources($request, $webhook);
 
         foreach($resources as $resource) {
-            //Execute actions
+            foreach($webhook->actions as $action) {
+                $filamentAction = collect(filament('richardpost-filament-webhooks')->getActions())
+                    ->filter(fn (Action $foundAction) => $foundAction->getName() === $action['type'])
+                    ->firstOrFail();
 
-            continue;
+                $filamentAction->executeAction($action['data'], $resource);
+            }
         }
 
         return $trigger->getSuccessfulResponse();
     }
 
-    /**
-     * @throws \Exception
-     */
     public function handleLifecycleNotification(Request $request, Webhook $webhook)
     {
         $trigger = $webhook->getTriggerConfig();

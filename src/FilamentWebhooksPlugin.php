@@ -10,6 +10,8 @@ class FilamentWebhooksPlugin implements Plugin
 {
     protected array $triggers = [];
 
+    protected array $actions = [];
+
     public static function make(): static
     {
         return new static();
@@ -54,5 +56,17 @@ class FilamentWebhooksPlugin implements Plugin
             });
 
         return $triggers;
+    }
+
+    public function actions(array $actions): static
+    {
+        $this->actions = $actions;
+
+        return $this;
+    }
+
+    public function getActions(): array
+    {
+        return $this->actions;
     }
 }

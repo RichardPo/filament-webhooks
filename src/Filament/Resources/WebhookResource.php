@@ -9,6 +9,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Get;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Collection;
+use RichardPost\FilamentWebhooks\Action;
 use RichardPost\FilamentWebhooks\Enums\WebhookStatus;
 use RichardPost\FilamentWebhooks\Filament\Resources\WebhookResource\Pages;
 use RichardPost\FilamentWebhooks\Filament\Resources\WebhookResource\RelationManagers;
@@ -60,7 +61,12 @@ class WebhookResource extends Resource
                 Section::make('Actions')
                     ->schema([
                         Builder::make('actions')
-                            ->schema([])
+                            ->blockNumbers(false)
+                            ->blocks(
+                                collect(filament('richardpost-filament-webhooks')->getActions())
+                                    ->map(fn (Action $action) => $action->getForm())
+                                    ->toArray()
+                            )
                     ])
             ]);
     }
