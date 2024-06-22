@@ -50,6 +50,8 @@ class FilamentWebhooksPlugin implements Plugin
             ->each(function (TriggerGroup|Trigger $triggerOrGroup) use (&$triggers) {
                 if($triggerOrGroup instanceof Trigger) {
                     $triggers[] = $triggerOrGroup;
+
+                    return;
                 }
 
                 $triggers = array_merge($triggers, $triggerOrGroup->getTriggers());

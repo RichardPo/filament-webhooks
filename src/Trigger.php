@@ -144,7 +144,7 @@ class Trigger
     {
         $callback = $this->getExternalResourcesUsing ?? fn () => [];
 
-        return $callback($request, $webhook->external_data, function (array $externalData) use ($webhook) {
+        return $callback($request, $webhook->trigger, $webhook->external_data, function (array $externalData) use ($webhook) {
             $webhook->updateQuietly([
                 'external_data' => $externalData
             ]);
