@@ -14,6 +14,8 @@ class CreateWebhook extends CreateRecord
 {
     protected static string $resource = WebhookResource::class;
 
+    public array $cache = [];
+
     protected function handleRecordCreation(array $data): Model
     {
         $record = new ($this->getModel())($data);

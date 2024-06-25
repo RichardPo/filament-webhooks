@@ -13,6 +13,8 @@ class EditWebhook extends EditRecord
 {
     protected static string $resource = WebhookResource::class;
 
+    public array $cache = [];
+
     protected function getHeaderActions(): array
     {
         return [
